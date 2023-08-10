@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Allan Casado - Ponderada Sem 3</title>
+</head>
+<body>
+  <h1>Cadastro de Produtos</h1>
+
+  <form id="formulario">
+    <label for="nome">Nome:</label>
+    <input type="text" id="nome" name="nome" required><br>
+
+    <label for="categoria">Categoria:</label>
+    <input type="text" id="categoria" name="categoria" required><br>
+
+    <label for="preco">Preço:</label>
+    <input type="number" id="preco" name="preco" step="0.01" required><br>
+
+    <label for="quantidade">Quantidade:</label>
+    <input type="number" id="quantidade" name="quantidade" required><br>
+
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <h2>Produtos Cadastrados</h2>
+  <ul id="lista-produtos">
+  </ul>
+
+  <script>
+    const formulario = document.getElementById('formulario');
+    const listaProdutos = document.getElementById('lista-produtos');
+
+    formulario.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const nome = event.target.nome.value;
+      const categoria = event.target.categoria.value;
+      const preco = parseFloat(event.target.preco.value);
+      const quantidade = parseInt(event.target.quantidade.value);
+
+      const response = await fetch('/cadastrar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nome, categoria, preco, quantidade })
+      });
+    });
+
+    async function listarProdutos() {
+      listaProdutos.innerHTML = ''; 
+
+      const response = await fetch('/listar');
+      const produtos = await response.json();
+
+      produtos.forEach((produto) => {
+        const item = document.createElement('li');
+        item.innerHTML = `${produto.nome} - ${produto.categoria} - R$ ${produto.preco.toFixed(2)} - Quantidade: ${produto.quantidade}`;
+        
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Deletar';
+        deleteButton.addEventListener('click', async () => {
+          const deleteResponse = await fetch(`/deletar/${produto.id}`, {
+            method: 'DELETE'
+          });
+        });
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Editar';
+        editButton.addEventListener('click', () => {
+          const newNome = prompt('Novo nome:', produto.nome);
+          const newCategoria = prompt('Nova categoria:', produto.categoria);
+          const newPreco = parseFloat(prompt('Novo preço:', produto.preco));
+          const newQuantidade = parseInt(prompt('Nova quantidade:', produto.quantidade));
+
+          if (newNome !== null && newCategoria !== null && !isNaN(newPreco) && !isNaN(newQuantidade)) {
+            editarProduto(produto.id, newNome, newCategoria, newPreco, newQuantidade);
+          }
+        });
+
+        item.appendChild(deleteButton);
+        item.appendChild(editButton);
+
+        listaProdutos.appendChild(item);
+      });
+    }
+
+    async function editarProduto(id, nome, categoria, preco, quantidade) {
+      const response = await fetch(`/editar/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nome, categoria, preco, quantidade })
+      });
+    }
+
+    listarProdutos();
+  </script>
+</body>
+</html>
